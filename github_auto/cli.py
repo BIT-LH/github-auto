@@ -10,7 +10,7 @@ from . import __version__
 from .auth import ensure_expected_user, verify_with_gh
 from .config import Account, Config
 from .github_api import GitHubAPI
-from .git import push as git_push
+from .git import ensure_ssh_remote, push as git_push
 from .repository import create_repository, parse_repo
 from .security import delete_token, set_token
 from .ssh import setup_ssh
@@ -116,7 +116,7 @@ def account_remove(
         raise typer.Abort()
     c.remove_account(name)
     delete_token(name)
-    typer.echo(f"已删除: {name}")
+    typer.echo(f"[*] Deleted: {name}")
 
 
 @account_app.command("use")
@@ -134,14 +134,14 @@ def account_verify(name: Optional[str] = typer.Argument(None)):
         raise typer.BadParameter(
             f"身份不匹配：配置={a.username}, GitHub={login}"
         )
-    typer.echo(f"✓ {name} -> GitHub @{login}")
+    typer.echo(f"[*] {name} -> GitHub @{login}")
 
 
 @ssh_app.command("setup")
 def ssh_setup(name: Optional[str] = typer.Argument(None)):
     name, a = resolve_account(name)
     path = setup_ssh(name, a)
-    typer.echo(f"SSH 配置已更新: {path}")
+    typer.echo(f"SSH Config Updated: {path}")
 
 
 @auth_app.command("token-set")
@@ -159,7 +159,7 @@ def auth_token_set(name: str):
 def auth_token_delete(name: str):
     cfg().get_account(name)
     delete_token(name)
-    typer.echo("Token 已删除")
+    typer.echo("[*] Token Deleted")
 
 
 @repo_app.command("create")
@@ -189,9 +189,9 @@ def repo_create(
         do_push=push,
         message=message,
     )
-    typer.echo(f"✓ Repository: {data['html_url']}")
+    typer.echo(f"[*] Repository: {data['html_url']}")
     if push:
-        typer.echo("✓ Push 完成")
+        typer.echo("[*] Push Done")
 
 
 @repo_app.command("list")
@@ -225,6 +225,26 @@ def repo_info(
     typer.echo(f"url: {data['html_url']}")
     typer.echo(f"visibility: {'private' if data['private'] else 'public'}")
     typer.echo(f"default_branch: {data.get('default_branch')}")
+    typer.echo(f"description: {data.get('description') or '(none)'}")
+
+
+@repo_app.command("edit")
+def repo_edit(
+    repo: str,
+    account: Optional[str] = typer.Option(None, "--account"),
+    description: str | None = typer.Option(None, "--description"),
+    private: bool | None = typer.Option(None, "--private"),
+):
+    name, a = resolve_account(account)
+    owner, repo_name = parse_repo(repo, a.username)
+    if description is None and private is None:
+        raise typer.BadParameter("至少需要指定 --description 或 --private")
+    api = GitHubAPI(name, a.api_base)
+    try:
+        data = api.update_repo(owner, repo_name, description=description, private=private)
+    finally:
+        api.close()
+    typer.echo(f"[*] Updated: {data['html_url']}")
 
 
 @repo_app.command("clone")
@@ -241,7 +261,7 @@ def repo_clone(
     import subprocess
     target = destination.expanduser() if destination else Path(repo_name)
     subprocess.run(["git", "clone", url, str(target)], check=True)
-    typer.echo(f"✓ 已克隆到 {target}")
+    typer.echo(f"[*] Cloned to {target}")
 
 
 @repo_app.command("delete")
@@ -262,7 +282,7 @@ def repo_delete(
         api.delete_repo(owner, repo_name)
     finally:
         api.close()
-    typer.echo(f"✓ 已删除 {owner}/{repo_name}")
+    typer.echo(f"[*] Deleted {owner}/{repo_name}")
 
 
 @git_app.command("push")
@@ -273,8 +293,10 @@ def git_push_command(
     name, a = resolve_account(account)
     ensure_expected_user(name, a)
     setup_ssh(name, a)
-    git_push(path.expanduser().resolve())
-    typer.echo("✓ Push 完成")
+    path = path.expanduser().resolve()
+    ensure_ssh_remote(path, a)
+    git_push(path)
+    typer.echo("[*] Push Done")
 
 
 if __name__ == "__main__":

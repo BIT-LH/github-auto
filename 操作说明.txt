@@ -1,6 +1,0 @@
-1：生成ssh
-ssh-keygen -t rsa -f C:/Users/liuhong/.ssh/名称 -C 1234
-2: 将key上传到对应的github账号
-3：切换账号
-git remote set-url origin git@solar-flare-888:solar-flare-888/test.git
-4：git push

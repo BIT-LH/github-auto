@@ -1,0 +1,14 @@
+current_account: account_a
+accounts:
+  account_a:
+    username: your_github_username
+    email: you@example.com
+    ssh_key: ~/.ssh/id_ed25519_github_a
+    ssh_host: github-account-a
+    api_base: https://api.github.com
+  account_b:
+    username: another_github_username
+    email: another@example.com
+    ssh_key: ~/.ssh/id_ed25519_github_b
+    ssh_host: github-account-b
+    api_base: https://api.github.com

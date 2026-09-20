@@ -69,3 +69,19 @@ class GitHubAPI:
         r = self.client.delete(f"/repos/{owner}/{repo}")
         if r.status_code not in (204,):
             r.raise_for_status()
+
+    def update_repo(
+        self,
+        owner: str,
+        repo: str,
+        description: str | None = None,
+        private: bool | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        if description is not None:
+            payload["description"] = description
+        if private is not None:
+            payload["private"] = private
+        r = self.client.patch(f"/repos/{owner}/{repo}", json=payload)
+        r.raise_for_status()
+        return r.json()

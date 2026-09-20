@@ -56,7 +56,7 @@ def setup_ssh(account_name: str, account: Account, generate_if_missing: bool = F
     if generate_if_missing and not identity.exists():
         identity = generate_ssh_key(account_name, account.email, identity)
 
-    identity = str(identity)
+    identity = str(identity).replace("\\", "/")
     block = (
         f"{BEGIN_PREFIX}{account_name}\n"
         f"Host {account.ssh_host}\n"
@@ -64,6 +64,7 @@ def setup_ssh(account_name: str, account: Account, generate_if_missing: bool = F
         f"    User git\n"
         f"    IdentityFile {identity}\n"
         f"    IdentitiesOnly yes\n"
+        f"    StrictHostKeyChecking no\n"
         f"{END_PREFIX}{account_name}\n"
     )
 
