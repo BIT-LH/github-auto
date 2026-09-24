@@ -7,10 +7,75 @@ from .ssh import ssh_remote
 from .utils import require_command, run
 
 
+# Default .gitignore template
+DEFAULT_GITIGNORE = """# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node (if used)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+"""
+
+
 def git_init(path: Path) -> None:
     require_command("git")
     if not (path / ".git").exists():
         run(["git", "init"], cwd=path)
+
+
+def create_gitignore(path: Path, content: str | None = None) -> Path:
+    """Create a .gitignore file in the given directory."""
+    gitignore_path = path / ".gitignore"
+    if gitignore_path.exists():
+        return gitignore_path
+    gitignore_path.write_text(content or DEFAULT_GITIGNORE, encoding="utf-8")
+    return gitignore_path
 
 
 def configure_identity(path: Path, account: Account) -> None:
@@ -41,18 +106,33 @@ def commit(path: Path, message: str) -> bool:
 
 
 def push(path: Path, branch: str = "main") -> None:
+    # Check if target branch exists, if not, handle master->main rename
     result = run(
         ["git", "rev-parse", "--verify", branch],
         cwd=path,
         check=False,
     )
     if result.returncode != 0:
-        current = run(
-            ["git", "branch", "--show-current"],
+        # Check if master exists and rename it to main
+        master_check = run(
+            ["git", "rev-parse", "--verify", "master"],
             cwd=path,
-        ).stdout.strip()
-        branch = current or "main"
-    run(["git", "push", "-u", "origin", branch], cwd=path)
+            check=False,
+        )
+        if master_check.returncode == 0:
+            run(["git", "branch", "-m", "master", "main"], cwd=path)
+        else:
+            # Create main branch if neither exists
+            run(["git", "checkout", "-b", "main"], cwd=path)
+
+    current = run(
+        ["git", "branch", "--show-current"],
+        cwd=path,
+    ).stdout.strip()
+    if current == "master":
+        run(["git", "branch", "-m", "master", "main"], cwd=path)
+
+    run(["git", "push", "-u", "origin", "main"], cwd=path)
 
 
 def ensure_ssh_remote(path: Path, account: Account) -> None:

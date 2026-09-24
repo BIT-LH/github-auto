@@ -5,7 +5,7 @@ from pathlib import Path
 from .auth import ensure_expected_user
 from .config import Account
 from .github_api import GitHubAPI
-from .git import commit, configure_identity, git_init, push, set_remote
+from .git import commit, configure_identity, create_gitignore, git_init, push, set_remote
 from .ssh import setup_ssh
 
 
@@ -46,6 +46,7 @@ def create_repository(
     path.mkdir(parents=True, exist_ok=True)
     git_init(path)
     configure_identity(path, account)
+    create_gitignore(path)
 
     if readme:
         readme_path = path / "README.md"

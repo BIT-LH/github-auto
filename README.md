@@ -10,10 +10,12 @@
 - 每个账号独立 SSH Key / Host
 - 创建 GitHub Repository
 - 自动生成 README
+- 自动创建 .gitignore（Python/Node/IDE/OS 等常见忽略规则）
 - 自动初始化本地 Git
 - 自动绑定 SSH remote
 - 自动 commit / push
 - push 前校验 GitHub 身份，降低多账号误推送风险
+- 所有 API 操作添加随机延迟，防止封号
 - 支持 Windows / macOS / Linux
 
 ## 环境要求
