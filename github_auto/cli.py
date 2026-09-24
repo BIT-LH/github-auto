@@ -550,13 +550,14 @@ def user_following(
 def git_push_command(
     account: Optional[str] = typer.Option(None, "--account"),
     path: Path = typer.Option(Path("."), "--path"),
+    force: bool = typer.Option(False, "--force"),
 ):
     name, a = resolve_account(account)
     ensure_expected_user(name, a)
     setup_ssh(name, a)
     path = path.expanduser().resolve()
     ensure_ssh_remote(path, a)
-    git_push(path)
+    git_push(path, force=force)
     typer.echo("[*] Push Done")
 
 

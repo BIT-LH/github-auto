@@ -105,7 +105,7 @@ def commit(path: Path, message: str) -> bool:
     return True
 
 
-def push(path: Path, branch: str = "main") -> None:
+def push(path: Path, branch: str = "main", force: bool = False) -> None:
     # Check if target branch exists, if not, handle master->main rename
     result = run(
         ["git", "rev-parse", "--verify", branch],
@@ -120,7 +120,16 @@ def push(path: Path, branch: str = "main") -> None:
             check=False,
         )
         if master_check.returncode == 0:
-            run(["git", "branch", "-m", "master", "main"], cwd=path)
+            # Try rename, if fails use checkout approach
+            rename_result = run(
+                ["git", "branch", "-m", "master", "main"],
+                cwd=path,
+                check=False,
+            )
+            if rename_result.returncode != 0:
+                # Alternative: create new branch from master
+                run(["git", "checkout", "-b", "main", "master"], cwd=path)
+                run(["git", "branch", "-D", "master"], cwd=path)
         else:
             # Create main branch if neither exists
             run(["git", "checkout", "-b", "main"], cwd=path)
@@ -130,9 +139,19 @@ def push(path: Path, branch: str = "main") -> None:
         cwd=path,
     ).stdout.strip()
     if current == "master":
-        run(["git", "branch", "-m", "master", "main"], cwd=path)
+        rename_result = run(
+            ["git", "branch", "-m", "master", "main"],
+            cwd=path,
+            check=False,
+        )
+        if rename_result.returncode != 0:
+            run(["git", "checkout", "-b", "main", "master"], cwd=path)
+            run(["git", "branch", "-D", "master"], cwd=path)
 
-    run(["git", "push", "-u", "origin", "main"], cwd=path)
+    cmd = ["git", "push", "-u", "origin", "main"]
+    if force:
+        cmd.append("--force")
+    run(cmd, cwd=path)
 
 
 def ensure_ssh_remote(path: Path, account: Account) -> None:
