@@ -129,6 +129,22 @@ github-auto repo info owner/repo --account account_a
 github-auto repo edit owner/repo --account account_a --description "new description"
 github-auto repo clone owner/repo --account account_a
 github-auto repo delete owner/repo --account account_a
+github-auto repo star owner/repo --account account_a
+github-auto repo star owner/repo --account account_a --unstar
+github-auto repo fork owner/repo --account account_a
+github-auto repo watch owner/repo --account account_a
+github-auto repo watch owner/repo --account account_a --unwatch
+github-auto repo search "keyword" --account account_a --limit 10
+github-auto repo browse owner/repo --account account_a
+github-auto repo browse owner/repo/src --account account_a
+github-auto repo download owner/repo --account account_a --branch main
+github-auto repo download owner/repo --account account_a --output ./download.zip
+
+github-auto user info username --account account_a
+github-auto user follow username --account account_a
+github-auto user follow username --account account_a --unfollow
+github-auto user followers username --account account_a
+github-auto user following username --account account_a
 
 github-auto git push --account account_a
 ```
@@ -138,4 +154,23 @@ github-auto git push --account account_a
 删除 Repository 是不可逆操作，CLI 会要求确认；可以使用 `--yes` 跳过交互确认。
 
 本项目不绕过 GitHub 的认证、权限或风控机制，仅使用 GitHub CLI、Git、SSH 和官方 API。
+
+## 防封号机制
+
+为防止操作过快触发 GitHub 风控，所有 API 请求都会添加随机延迟：
+
+### 高风险操作（写操作）
+- `repo star` - 点赞/取消点赞：延迟 5-65 秒
+- `repo fork` - Fork 仓库：延迟 5-65 秒
+- `repo watch` - Watch/取消 Watch：延迟 5-65 秒
+- `repo delete` - 删除仓库：延迟 5-65 秒
+- `repo edit` - 编辑仓库：延迟 5-65 秒
+- `user follow` - 关注/取消关注用户：延迟 5-65 秒
+
+### 低风险操作（读操作）
+- `repo list/info/browse/search` - 列表/详情/浏览/搜索：延迟 2-10 秒
+- `user info/followers/following` - 用户信息/粉丝/关注：延迟 2-10 秒
+
+延迟公式：`sleep(base + random(0, spread))`
+
 github-auto account add account_a --username yourname --email you@example.com

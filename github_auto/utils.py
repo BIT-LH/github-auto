@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import random
 import shlex
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Iterable
 
@@ -10,6 +12,12 @@ from typing import Iterable
 def require_command(name: str) -> None:
     if not shutil.which(name):
         raise RuntimeError(f"未找到命令 `{name}`，请先安装并加入 PATH")
+
+
+def random_sleep(base: float = 5.0, spread: float = 60.0) -> None:
+    """Sleep for base + random(0, spread) seconds to avoid rate limiting."""
+    delay = base + random.uniform(0, spread)
+    time.sleep(delay)
 
 
 def run(
